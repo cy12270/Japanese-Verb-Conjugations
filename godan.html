@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Godan Verb Conjugator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 5px 10px;
+      margin: 5px 0;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 700px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Godan Verb Conjugator</h1>
+  <p>Enter a Japanese Godan verb (dictionary form):</p>
+  <input type="text" id="verbInput" placeholder="e.g. 書く">
+  <button onclick="checkVerb()">Check</button>
+
+  <div id="result"></div>
+
+  <script>
+    function conjugateGodan(dictForm) {
+      const stem = dictForm.slice(0, -1); // remove final kana
+      const ending = dictForm.slice(-1);
+
+      // Kana shifts for godan endings
+      const shifts = {
+        'う': {a:'わ', i:'い', u:'う', e:'え', o:'お'},
+        'く': {a:'か', i:'き', u:'く', e:'け', o:'こ'},
+        'ぐ': {a:'が', i:'ぎ', u:'ぐ', e:'げ', o:'ご'},
+        'す': {a:'さ', i:'し', u:'す', e:'せ', o:'そ'},
+        'つ': {a:'た', i:'ち', u:'つ', e:'て', o:'と'},
+        'ぬ': {a:'な', i:'に', u:'ぬ', e:'ね', o:'の'},
+        'む': {a:'ま', i:'み', u:'む', e:'め', o:'も'},
+        'ぶ': {a:'ば', i:'び', u:'ぶ', e:'べ', o:'ぼ'},
+        'る': {a:'ら', i:'り', u:'る', e:'れ', o:'ろ'}
+      };
+
+      if (!shifts[ending]) return null;
+
+      const base = shifts[ending];
+
+      const conjugations = {
+        "Dictionary": dictForm,
+        "Polite Present": stem + base.i + "ます",
+        "Polite Negative": stem + base.i + "ません",
+        "Polite Past": stem + base.i + "ました",
+        "Polite Past Negative": stem + base.i + "ませんでした",
+        "Plain Negative": stem + base.a + "ない",
+        "Plain Past": (ending === 'く' ? stem + base.i + "た" : stem + base.i + "た"), // simplified
+        "Plain Past Negative": stem + base.a + "なかった",
+        "Te-form": stem + base.i + "て", // simplified rules
+        "Potential": stem + base.e + "る",
+        "Causative": stem + base.a + "せる",
+        "Passive": stem + base.a + "れる",
+        "Volitional (plain)": stem + base.o + "う",
+        "Volitional (polite)": stem + base.i + "ましょう",
+        "Imperative": stem + base.e,
+        "Provisional Conditional": stem + base.e + "ば",
+        "Conditional (plain)": stem + base.i + "たら",
+        "Negative Conditional": stem + base.a + "なければ",
+        "Desire": stem + base.i + "たい"
+      };
+
+      return conjugations;
+    }
+
+    async function checkVerb() {
+      const word = document.getElementById("verbInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "Checking...";
+
+      if (!word) {
+        resultDiv.innerHTML = "Please enter a word.";
+        return;
+      }
+
+      try {
+        const apiUrl = `https://jisho.org/api/v1/search/words?keyword=${encodeURIComponent(word)}`;
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(apiUrl)}`;
+
+        const response = await fetch(proxyUrl);
+        const wrapped = await response.json();
+        const data = JSON.parse(wrapped.contents);
+
+        if (!data || !data.data || data.data.length === 0) {
+          resultDiv.innerHTML = "No results found.";
+          return;
+        }
+
+        // Find entry with Godan verb
+        const entry = data.data.find(item =>
+          item.senses.some(sense =>
+            sense.parts_of_speech.some(pos => pos.includes("Godan verb"))
+          )
+        );
+
+        if (!entry) {
+          resultDiv.innerHTML = `<b>${word}</b> is not identified as a Godan verb.`;
+          return;
+        }
+
+        const dictForm = entry.japanese[0].word || entry.japanese[0].reading;
+        const conjugations = conjugateGodan(dictForm);
+
+        if (!conjugations) {
+          resultDiv.innerHTML = "Unable to conjugate this verb.";
+          return;
+        }
+
+        // Create HTML table
+        let table = "<table><tr><th>Form</th><th>Conjugation</th></tr>";
+        for (const [form, value] of Object.entries(conjugations)) {
+          table += `<tr><td>${form}</td><td>${value}</td></tr>`;
+        }
+        table += "</table>";
+
+        resultDiv.innerHTML = table;
+
+      } catch (error) {
+        resultDiv.innerHTML = "Error occurred while fetching data.";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "japanese-verb-conjugations",
+  "version": "1.0.0",
+  "description": "a simple HTML + JavaScript website for  Japanese verbs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cy12270/Japanese-Verb-Conjugations.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cy12270/Japanese-Verb-Conjugations/issues"
+  },
+  "homepage": "https://github.com/cy12270/Japanese-Verb-Conjugations#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  }
+}

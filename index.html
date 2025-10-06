@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ichidan Verb Conjugator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+    }
+    input, button {
+      font-size: 16px;
+      padding: 5px 10px;
+      margin: 5px 0;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 600px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px 10px;
+      text-align: left;
+    }
+    th {
+      background: #f4f4f4;
+    }
+  </style>
+</head>
+<body>
+  <h1>Ichidan Verb Conjugator</h1>
+  <p>Enter a Japanese verb (dictionary form):</p>
+  <input type="text" id="verbInput" placeholder="e.g. 見る">
+  <button onclick="checkVerb()">Check</button>
+
+  <div id="result"></div>
+
+  <script>
+    async function checkVerb() {
+      const word = document.getElementById("verbInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "Checking...";
+
+      if (!word) {
+        resultDiv.innerHTML = "Please enter a word.";
+        return;
+      }
+
+      try {
+        const url = `/api/search?keyword=${encodeURIComponent(word)}`;
+
+        const response = await fetch(url);
+        const wrapped = await response.json(); 
+        const data = JSON.parse(wrapped.contents);
+
+        if (!data || !data.data || data.data.length === 0) {
+          resultDiv.innerHTML = "No results found.";
+          return;
+        }
+
+        // Find entry with Ichidan verb in parts_of_speech
+        const entry = data.data.find(item =>
+          item.senses.some(sense =>
+            sense.parts_of_speech.includes("Ichidan verb")
+          )
+        );
+
+        if (!entry) {
+          resultDiv.innerHTML = `<b>${word}</b> is not an Ichidan verb.`;
+          return;
+        }
+
+        const dictForm = entry.japanese[0].word || entry.japanese[0].reading;
+        const stem = dictForm.endsWith("る") ? dictForm.slice(0, -1) : dictForm;
+
+        const conjugations = {
+          "Dictionary": dictForm,
+          "Polite Present": stem + "ます",
+          "Polite Negative": stem + "ません",
+          "Polite Past": stem + "ました",
+          "Polite Past Negative": stem + "ませんでした",
+          "Plain Negative": stem + "ない",
+          "Plain Past": stem + "た",
+          "Plain Past Negative": stem + "なかった",
+          "Te-form": stem + "て",
+          "Potential": stem + "られる",
+          "Causative": stem + "させる",
+          "Passive": stem + "られる",
+          "Volitional (plain)": stem + "よう",
+          "Volitional (polite)": stem + "ましょう",
+          "Imperative": stem + "ろ",
+          "Provisional Conditional": stem + "れば",
+          "Conditional (plain)": stem + "たら",
+          "Negative Conditional": stem + "なければ",
+          "Desire": stem + "たい"
+        };
+
+        // Create HTML table
+        let table = "<table><tr><th>Form</th><th>Conjugation</th></tr>";
+        for (const [form, value] of Object.entries(conjugations)) {
+          table += `<tr><td>${form}</td><td>${value}</td></tr>`;
+        }
+        table += "</table>";
+
+        resultDiv.innerHTML = `<p>✅ <b>${dictForm}</b> is an Ichidan verb.</p>` + table;
+
+      } catch (error) {
+        console.error(error);
+        resultDiv.innerHTML = "Error occurred while fetching data.";
+      }
+    }
+  </script>
+</body>
+</html>
